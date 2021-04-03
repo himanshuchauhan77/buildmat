@@ -1,0 +1,14 @@
+# version of docker compose config file
+version: "3"
+
+# Services that make our application
+services:
+  app:
+    build:
+      context: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./ecomm:/app
+    command: >
+      sh -c "python manage.py runserver 0.0.0.0:8000"
