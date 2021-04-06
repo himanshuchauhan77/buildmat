@@ -9,8 +9,15 @@ ENV PYTHONUNBUFFERED 1
 # Copying requirements.txt from directory to docker
 COPY ./requirements.txt /requirements.txt
 
+RUN apk add --update --no-cache postgresql-client
+RUN apk add --update --no-cache --virtual .tmp-build-deps\
+    gcc libc-dev linux-headers postgresql-dev
+RUN apk add jpeg-dev zlib-dev libjpeg
+
 # installing requirements.txt in docker
 RUN pip install -r /requirements.txt
+
+RUN apk del .tmp-build-deps
 
 # make a directory within docker image to store our app
 RUN mkdir /app
@@ -21,8 +28,10 @@ WORKDIR /app
 # copy from our local machine app folder to app folder in docker that we created
 COPY ./ecomm /app
 
+
 # We are creating a user to run our application in docker
 RUN adduser -D user
 
 #Switches docker to user we created
 USER user
+
