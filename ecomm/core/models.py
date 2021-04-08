@@ -5,9 +5,16 @@ from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin
 # Create your models here.
 
 
-class PhoneModel(models.Model):
-    mobile = models.IntegerField(blank=False, unique=True)
-    is_verified = models.BooleanField(default=False)
+class IntegerRangeField(models.BigIntegerField):
+    def __init__(self, verbose_name=None,
+                 name=None, min_value=None, max_value=None, **kwargs):
+        self.min_value, self.max_value = min_value, max_value
+        models.IntegerField.__init__(self, verbose_name, name, **kwargs)
+
+    def formfield(self, **kwargs):
+        defaults = {'min_value': self.min_value, 'max_value': self.max_value}
+        defaults.update(kwargs)
+        return super(IntegerRangeField, self).formfield(**defaults)
 
 
 class CustomUserManager(BaseUserManager):
@@ -17,7 +24,8 @@ class CustomUserManager(BaseUserManager):
         if not email:
             raise ValueError('Users must have an email address or email')
         if not phone_no:
-            raise ValueError('Users must have an email address or phone_no')
+            raise ValueError('Users must have a phone_no')
+        # phone = PhoneModel.objects.create(phone_no=phone_no)
         now = timezone.now()
         email = self.normalize_email(email)
         user = self.model(
@@ -47,10 +55,12 @@ class CustomUserManager(BaseUserManager):
 class UserProfile(AbstractBaseUser, PermissionsMixin):
     username = models.CharField(max_length=255,
                                 unique=True)
+    name = models.CharField(max_length=100)
     profile_pic = models.ImageField(upload_to='profile_pics/',
                                     null=True, blank=True)
-    phone_no = models.OneToOneField(PhoneModel,
-                                    on_delete=models.CASCADE)
+    phone_no = IntegerRangeField(min_value=10,
+                                 max_value=10, unique=True)
+    phone_no_verified = models.BooleanField(default=False)
     email = models.EmailField(unique=True)
     is_staff = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
@@ -59,7 +69,7 @@ class UserProfile(AbstractBaseUser, PermissionsMixin):
     last_login = models.DateTimeField(null=True)
 
     USERNAME_FIELD = 'username'
-    REQUIRED_FIELDS = ['name', 'phone_no']
+    REQUIRED_FIELDS = ['name', 'phone']
 
     def get_full_name(self):
         return self.email
